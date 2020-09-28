@@ -23,7 +23,8 @@ import sys
 import re
 import codecs
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import matplotlib.pyplot as plt
 
 from nparser.misc.colors import ctext, color_pattern

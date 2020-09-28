@@ -29,7 +29,8 @@ import lzma
 from collections import Counter
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 import nparser.neural.linalg as linalg
 from nparser.vocabs.base_vocab import BaseVocab

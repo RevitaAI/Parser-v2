@@ -30,7 +30,8 @@ from collections import defaultdict
 import os.path as op
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from nparser import Configurable
 from nparser.vocabs import *

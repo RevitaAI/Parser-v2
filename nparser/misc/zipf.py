@@ -25,7 +25,8 @@ import pickle as pkl
 
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from nparser import Configurable
 from nparser.neural.optimizers import RadamOptimizer

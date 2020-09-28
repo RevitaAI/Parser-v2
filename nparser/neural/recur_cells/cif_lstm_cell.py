@@ -19,7 +19,8 @@
 
 
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from nparser.neural.recur_cells.base_cell import BaseCell
 from nparser.neural.linalg import linear
