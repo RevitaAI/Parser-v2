@@ -26,17 +26,17 @@ tf.disable_v2_behavior()
 import nparser.neural.linalg as linalg
 
 #===============================================================
-def birnn(cell, inputs, sequence_length, initial_state_fw=None, initial_state_bw=None, ff_keep_prob=1., recur_keep_prob=1., dtype=tf.float32, scope=None):
+def birnn(cell, inputs, sequence_length, initial_state_fw=None, initial_state_bw=None, ff_keep_prob=1., recur_keep_prob=1., enforce_dropout=False, dtype=tf.float32, scope=None):
   """ """
   
   # Forward direction
   with tf.variable_scope(scope or 'BiRNN_FW') as fw_scope:
-    output_fw, output_state_fw = rnn(cell, inputs, sequence_length, initial_state_fw, ff_keep_prob, recur_keep_prob, dtype, scope=fw_scope)
+    output_fw, output_state_fw = rnn(cell, inputs, sequence_length, initial_state_fw, ff_keep_prob, recur_keep_prob, enforce_dropout, dtype, scope=fw_scope)
 
   # Backward direction
   rev_inputs = tf.reverse_sequence(inputs, sequence_length, 1, 0)
   with tf.variable_scope(scope or 'BiRNN_BW') as bw_scope:
-    output_bw, output_state_bw = rnn(cell, rev_inputs, sequence_length, initial_state_bw, ff_keep_prob, recur_keep_prob, dtype, scope=bw_scope)
+    output_bw, output_state_bw = rnn(cell, rev_inputs, sequence_length, initial_state_bw, ff_keep_prob, recur_keep_prob, enforce_dropout, dtype, scope=bw_scope)
   output_bw = tf.reverse_sequence(output_bw, sequence_length, 1, 0)
   # Concat each of the forward/backward outputs
   outputs = tf.concat([output_fw, output_bw], 2)
@@ -44,7 +44,7 @@ def birnn(cell, inputs, sequence_length, initial_state_fw=None, initial_state_bw
   return outputs, tf.tuple([output_state_fw, output_state_bw])
 
 #===============================================================
-def rnn(cell, inputs, sequence_length=None, initial_state=None, ff_keep_prob=1., recur_keep_prob=1., dtype=tf.float32, scope=None):
+def rnn(cell, inputs, sequence_length=None, initial_state=None, ff_keep_prob=1., recur_keep_prob=1., enforce_dropout=False, dtype=tf.float32, scope=None):
   """ """
   
   inputs = tf.transpose(inputs, [1, 0, 2])  # (B,T,D) => (T,B,D)
@@ -84,11 +84,17 @@ def rnn(cell, inputs, sequence_length=None, initial_state=None, ff_keep_prob=1.,
     
     if ff_keep_prob < 1:
       noise_shape = tf.stack([1, batch_size, const_depth])
-      inputs = tf.nn.dropout(inputs, ff_keep_prob, noise_shape=noise_shape)
+      if enforce_dropout is not None:
+        inputs = tf.layers.dropout(inputs, 1 - ff_keep_prob, noise_shape=noise_shape, training=enforce_dropout)
+      else:
+        inputs = tf.nn.dropout(inputs, ff_keep_prob, noise_shape=noise_shape)
       
     if recur_keep_prob < 1:
       ones = tf.ones(tf.stack([batch_size, cell.output_size]))
-      state_dropout = tf.nn.dropout(ones, recur_keep_prob)
+      if enforce_dropout is not None:
+        state_dropout = tf.layers.dropout(ones, 1 - recur_keep_prob, training=enforce_dropout)
+      else:
+        state_dropout = tf.nn.dropout(ones, recur_keep_prob)
       state_dropout = tf.concat([ones] * (cell.state_size // cell.output_size - 1) + [state_dropout], 1)
     else:
       state_dropout = 1

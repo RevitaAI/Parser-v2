@@ -104,7 +104,10 @@ class NN(Configurable):
       keep_prob = 1
     if keep_prob < 1:
       noise_shape = tf.stack([self.batch_size] + [1]*(n_dims-2) + [input_size])
-      inputs = tf.nn.dropout(inputs, keep_prob, noise_shape=noise_shape)
+      if self.mc_dropout is not None:
+        inputs = tf.layers.dropout(inputs, 1 - keep_prob, noise_shape=noise_shape, training=self.mc_dropout)
+      else:
+        inputs = tf.nn.dropout(inputs, keep_prob, noise_shape=noise_shape)
     
     lin = linalg.linear(inputs,
                         output_size,
@@ -149,8 +152,12 @@ class NN(Configurable):
     if keep_prob < 1:
       noise_shape1 = tf.stack([self.batch_size] + [1]*(n_dims1-2) + [inputs1_size])
       noise_shape2 = tf.stack([self.batch_size] + [1]*(n_dims2-2) + [inputs2_size])
-      inputs1 = tf.nn.dropout(inputs1, keep_prob, noise_shape=noise_shape1)
-      inputs2 = tf.nn.dropout(inputs2, keep_prob, noise_shape=noise_shape2)
+      if self.mc_dropout is not None:
+        inputs1 = tf.layers.dropout(inputs1, 1 - keep_prob, noise_shape=noise_shape1, training=self.mc_dropout)
+        inputs2 = tf.layers.dropout(inputs2, 1 - keep_prob, noise_shape=noise_shape2, training=self.mc_dropout)
+      else:
+        inputs1 = tf.nn.dropout(inputs1, keep_prob, noise_shape=noise_shape1)
+        inputs2 = tf.nn.dropout(inputs2, keep_prob, noise_shape=noise_shape2)
     
     bilin = linalg.bilinear(inputs1, inputs2, output_size,
                             n_splits,
@@ -167,7 +174,7 @@ class NN(Configurable):
     return bilin
 
   #=============================================================
-  def convolutional(self, inputs, window_size, output_size, keep_prob=None, n_splits=1, add_bias=True, initializer=None):
+  def convolutional(self, inputs, window_size, output_size, keep_prob=None, n_splits=1, add_bias=True, initializer=None, enforce_dropout=False):
     """ """
     
     if isinstance(inputs, (list, tuple)):
@@ -183,7 +190,10 @@ class NN(Configurable):
       keep_prob = 1
       
     if keep_prob < 1:
-      inputs = tf.nn.dropout(inputs, keep_prob)
+      if self.mc_dropout is not None:
+        inputs = tf.layers.dropout(inputs, 1 - keep_prob, training=self.mc_dropout)
+      else:
+        inputs = tf.nn.dropout(inputs, keep_prob)
     
     conv = linalg.convolutional(inputs,
                                 window_size,
@@ -290,7 +300,8 @@ class NN(Configurable):
     
     top_recur, end_state = self.rnn_func(cell, inputs, self.sequence_lengths,
                                  ff_keep_prob=ff_keep_prob,
-                                 recur_keep_prob=recur_keep_prob)
+                                 recur_keep_prob=recur_keep_prob,
+                                 enforce_dropout=self.mc_dropout)
     return top_recur, end_state
   
   #=============================================================

@@ -289,6 +289,9 @@ class Configurable(object):
   @property
   def ff_keep_prob(self):
     return self.getfloat('ff_keep_prob')
+  @property
+  def mc_dropout(self):
+    return self.getboolean('mc_dropout')
   
   #=============================================================
   # [Metabucket / Parser / Joint Parser]
