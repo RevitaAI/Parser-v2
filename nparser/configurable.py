@@ -291,7 +291,10 @@ class Configurable(object):
     return self.getfloat('ff_keep_prob')
   @property
   def mc_dropout(self):
-    return self.getboolean('mc_dropout')
+    try:
+      return self.getboolean('mc_dropout')
+    except NoOptionError as e:
+      return None
   
   #=============================================================
   # [Metabucket / Parser / Joint Parser]
